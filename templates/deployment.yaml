@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "dnsmasq.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "dnsmasq.name" . }}
+    helm.sh/chart: {{ include "dnsmasq.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "dnsmasq.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "dnsmasq.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.images.tags.dnsmasq }}
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          command:
+#            - /bin/bash
+            - /usr/sbin/dnsmasq
+            - "--user=root"
+            - "-d"
+            - "--port=6767"
+            - "--log-dhcp"
+          ports:
+            - name: dnsmasq
+              containerPort: 6767
+              protocol: UDP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+#          env:
+#            - name: KOLLA_CONFIG_STRATEGY
+#              value: COPY_ALWAYS
+#            - name: KOLLA_CONFIG
+#              value: '{"command": "/usr/sbin/dnsmasq"}'
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
