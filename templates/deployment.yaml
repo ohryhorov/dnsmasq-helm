@@ -23,17 +23,17 @@ spec:
         - name: {{ .Chart.Name }}
           image: {{ .Values.images.tags.dnsmasq }}
           imagePullPolicy: {{ .Values.images.pullPolicy }}
+          securityContext:
+            privileged: true
           command:
-#            - /bin/bash
             - /usr/sbin/dnsmasq
             - "--user=root"
             - "-d"
-            - "--port=6767"
             - "--log-dhcp"
-          ports:
-            - name: dnsmasq
-              containerPort: 6767
-              protocol: UDP
+#          ports:
+#            - name: dnsmasq
+#              containerPort: 6767
+#              protocol: UDP
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
 #          env:
@@ -41,6 +41,26 @@ spec:
 #              value: COPY_ALWAYS
 #            - name: KOLLA_CONFIG
 #              value: '{"command": "/usr/sbin/dnsmasq"}'
+          volumeMounts:
+            - name: dnsmasq-etc
+              mountPath: /etc/dnsmasq.conf
+              subPath: dnsmasq.conf
+              readOnly: true
+            - name: dnsmasq-etc
+              mountPath: /etc/dnsmasq.d/dnsmasq.hostsfile
+              subPath: dnsmasq.hostsfile
+              readOnly: true
+            - name: dnsmasq-etc
+              mountPath: /etc/dnsmasq.d/dnsmasq.addnhosts
+              subPath: dnsmasq.addnhosts
+              readOnly: true
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      volumes:
+        - name: dnsmasq-etc
+          secret:
+            secretName: dnsmasq-etc
+            defaultMode: 0444
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

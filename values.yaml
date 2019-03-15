@@ -4,11 +4,6 @@
 
 replicaCount: 1
 
-#image:
-#  repository: nginx
-#  tag: stable
-#  pullPolicy: IfNotPresent
-
 images:
   tags:
     dnsmasq: kolla/ubuntu-binary-dnsmasq:4.0.6
@@ -27,6 +22,9 @@ fullnameOverride: ""
 service:
   type: ClusterIP
   port: 67
+  targetPort: 6767
+  clusterIP: None
+  protocol: UDP
 
 ingress:
   enabled: false
@@ -40,6 +38,25 @@ ingress:
   #  - secretName: chart-example-tls
   #    hosts:
   #      - chart-example.local
+
+network_policy:
+  dnsmasq:
+    ingress:
+      - from:
+        - podSelector:
+            matchLabels:
+              application: grafana
+        - podSelector:
+            matchLabels:
+              application: mariadb
+        ports:
+        - protocol: UDP
+          port: 67
+
+#network_policy:
+#  dnsmasq:
+#    ingress:
+#      - {}
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
@@ -58,3 +75,33 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+conf:
+  dnsmasq: |
+    strict-order
+    #user=libvirt-dnsmasq
+    pid-file=/var/run/vbmc-ironic/dnsmasq.pid
+    except-interface=lo
+    except-interface=virbr0
+    bind-dynamic
+    interface=br-simulator
+    dhcp-range=192.168.90.100,192.168.90.254,12h
+    dhcp-no-override
+    dhcp-authoritative
+    dhcp-lease-max=253
+    # Boot for Etherboot gPXE. The idea is to send two different
+    # filenames, the first loads gPXE, and the second tells gPXE what to
+    # load. The dhcp-match sets the gpxe tag for requests from gPXE.
+    dhcp-userclass=set:gpxe,"gPXE"
+    dhcp-boot=tag:gpxe,/ipxe.pxe
+    dhcp-match=set:ipxe,175 # iPXE sends a 175 option.
+    dhcp-boot=tag:ipxe,http://192.168.10.7:8080/boot.ipxe
+    dhcp-hostsfile=/etc/dnsmasq.d/dnsmasq.hostsfile
+    addn-hosts=/etc/dnsmasq.d/dnsmasq.addnhosts
+  hostsfile: ""
+  addnhosts: ""
+
+manifests:
+  configmap_etc: true
+  service_dnsmasq: false
+

@@ -1,3 +1,4 @@
+{{- if .Values.manifests.service_dnsmasq -}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -8,14 +9,20 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
 spec:
-  type: {{ .Values.service.type }}
+  {{- with .Values.service.type }}
+  type: {{ . }}
+  {{- end }}
+  {{- with .Values.service.clusterIP }}
+  clusterIP: {{ . }}
+  {{- end }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: 6767
-      port: 67
-      protocol: UDP
+      targetPort: {{ .Values.service.targetPort }}
+      port: {{ .Values.service.port }}
+      protocol: {{ .Values.service.protocol }}
       name: dnsmasq
   selector:
     app.kubernetes.io/name: {{ include "dnsmasq.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
 
+{{- end }}
