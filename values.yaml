@@ -19,6 +19,11 @@ images:
 nameOverride: ""
 fullnameOverride: ""
 
+labels:
+  server:
+    node_selector_key: openstack-control-plane
+    node_selector_value: enabled
+
 service:
   type: ClusterIP
   port: 67
@@ -104,4 +109,4 @@ conf:
 manifests:
   configmap_etc: true
   service_dnsmasq: false
-
+  deployment: true
