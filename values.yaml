@@ -16,8 +16,12 @@ images:
       - dep_check
       - image_repo_sync
 
-nameOverride: ""
-fullnameOverride: ""
+dependencies:
+  dynamic:
+    common:
+      local_image_registry: {}
+
+  static: {}
 
 labels:
   server:
@@ -31,37 +35,10 @@ service:
   clusterIP: None
   protocol: UDP
 
-ingress:
-  enabled: false
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
-  paths: []
-  hosts:
-    - chart-example.local
-  tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
-
 network_policy:
   dnsmasq:
     ingress:
-      - from:
-        - podSelector:
-            matchLabels:
-              application: grafana
-        - podSelector:
-            matchLabels:
-              application: mariadb
-        ports:
-        - protocol: UDP
-          port: 67
-
-#network_policy:
-#  dnsmasq:
-#    ingress:
-#      - {}
+      - {}
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
@@ -84,7 +61,6 @@ affinity: {}
 conf:
   dnsmasq: |
     strict-order
-    #user=libvirt-dnsmasq
     pid-file=/var/run/vbmc-ironic/dnsmasq.pid
     except-interface=lo
     except-interface=virbr0
@@ -110,3 +86,4 @@ manifests:
   configmap_etc: true
   service_dnsmasq: false
   deployment: true
+  network_policy: false

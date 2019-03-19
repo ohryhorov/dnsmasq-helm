@@ -1,10 +1,14 @@
 {{- if .Values.manifests.deployment }}                                                                                                                                                                                                       
 {{- $envAll := . }}
 
+{{- $serviceAccountName := printf "%s-%s" $envAll.Release.Name "dnsmasq" }}
+{{ tuple $envAll "dnsmasq" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "dnsmasq.fullname" . }}
+  name: {{ $serviceAccountName }}
+  namespace: {{ $envAll.Release.Namespace }}
   labels:
 {{ tuple $envAll "dnsmasq" "server" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 4 }}
 spec:
@@ -21,6 +25,7 @@ spec:
         - name: {{ .Chart.Name }}
           image: {{ .Values.images.tags.dnsmasq }}
           imagePullPolicy: {{ .Values.images.pullPolicy }}
+          serviceAccountName: {{ $serviceAccountName }}
           securityContext:
             privileged: true
           command:
@@ -28,10 +33,6 @@ spec:
             - "--user=root"
             - "-d"
             - "--log-dhcp"
-#          ports:
-#            - name: dnsmasq
-#              containerPort: 6767
-#              protocol: UDP
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
 #          env:
@@ -71,6 +72,5 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
     {{- end }}
-
 
 {{- end }}
