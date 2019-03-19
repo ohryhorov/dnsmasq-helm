@@ -11,7 +11,7 @@ images:
     image_repo_sync: docker.io/docker:17.07.0
   pull_policy: IfNotPresent
   local_registry:
-    active: true
+    active: false
     exclude:
       - dep_check
       - image_repo_sync
@@ -19,7 +19,12 @@ images:
 dependencies:
   dynamic:
     common:
-      local_image_registry: {}
+      local_image_registry:
+        jobs:
+          - dnsmasq-image-repo-sync
+        services:
+          - endpoint: node
+            service: local_image_registry
 
   static: {}
 
@@ -27,6 +32,24 @@ labels:
   server:
     node_selector_key: openstack-control-plane
     node_selector_value: enabled
+  job:
+    node_selector_key: openstack-control-plane
+    node_selector_value: enabled
+
+endpoints:
+  cluster_domain_suffix: cluster.local
+  local_image_registry:
+    name: docker-registry
+    namespace: docker-registry
+    hosts:
+      default: localhost
+      internal: docker-registry
+      node: localhost
+    host_fqdn_override:
+      default: null
+    port:
+      registry:
+        node: 5000
 
 service:
   type: ClusterIP
@@ -40,6 +63,27 @@ network_policy:
     ingress:
       - {}
 
+pod:
+  replicas:
+    server: 1
+  resources:
+    enabled: false
+    dnsmasq:
+      limits:
+        cpu: "2000m"
+        memory: "1024Mi"
+      requests:
+        cpu: "500m"
+        memory: "128Mi"
+    jobs:
+      image_repo_sync:
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+        limits:
+          memory: "1024Mi"
+          cpu: "2000m"
+
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
@@ -52,7 +96,7 @@ resources: {}
   #  cpu: 100m
   #  memory: 128Mi
 
-nodeSelector: {}
+#nodeSelector: {}
 
 tolerations: []
 
@@ -87,3 +131,4 @@ manifests:
   service_dnsmasq: false
   deployment: true
   network_policy: false
+  job_image_repo_sync: true
