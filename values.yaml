@@ -6,7 +6,7 @@ replicaCount: 1
 
 images:
   tags:
-    dnsmasq: kolla/ubuntu-binary-dnsmasq:4.0.6
+    dnsmasq: docker.io/ohryhorov/ubuntu-binary-dnsmasq:ocata
     dep_check: quay.io/stackanetes/kubernetes-entrypoint:v0.3.1
     image_repo_sync: docker.io/docker:17.07.0
   pull_policy: IfNotPresent
