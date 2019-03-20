@@ -37,6 +37,26 @@ spec:
       labels:
 {{ tuple $envAll "dnsmasq" "server" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
     spec:
+      initContainers:
+        - name: dnsmasq-set-pxe-http
+{{ tuple $envAll "dnsmasq" | include "helm-toolkit.snippets.image" | indent 10 }}
+{{ tuple $envAll $envAll.Values.pod.resources.dnsmasq| include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
+          env:
+            - name: PROVISIONER_INTERFACE
+              value: {{ .Values.network.pxe.device }}
+          command:
+            - /tmp/dnsmasq-set-pxe-http.sh
+          volumeMounts:
+            - name: dnsmasq-bin
+              mountPath: /tmp/dnsmasq-set-pxe-http.sh
+              subPath: dnsmasq-set-pxe-http.sh
+              readOnly: true
+            - name: dnsmasq-etc
+              mountPath: /etc/dnsmasq.conf
+              subPath: dnsmasq.conf
+              readOnly: true
+            - name: pod-shared
+              mountPath: /tmp/pod-shared
       containers:
         - name: {{ .Chart.Name }}
           image: {{ .Values.images.tags.dnsmasq }}
@@ -45,16 +65,14 @@ spec:
           securityContext:
             privileged: true
           command:
-            - /usr/sbin/dnsmasq
-            - "--user=root"
-            - "-d"
-            - "--log-dhcp"
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            - /tmp/dnsmasq.sh
           volumeMounts:
-            - name: dnsmasq-etc
-              mountPath: /etc/dnsmasq.conf
-              subPath: dnsmasq.conf
+            - name: dnsmasq-bin
+              mountPath: /tmp/dnsmasq.sh
+              subPath: dnsmasq.sh
+              readOnly: true
+            - name: pod-shared
+              mountPath: /tmp/pod-shared
               readOnly: true
             - name: dnsmasq-etc
               mountPath: /etc/dnsmasq.d/dnsmasq.hostsfile
@@ -64,6 +82,8 @@ spec:
               mountPath: /etc/dnsmasq.d/dnsmasq.addnhosts
               subPath: dnsmasq.addnhosts
               readOnly: true
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
       volumes:
@@ -71,6 +91,12 @@ spec:
           secret:
             secretName: dnsmasq-etc
             defaultMode: 0444
+        - name: pod-shared
+          emptyDir: {}
+        - name: dnsmasq-bin
+          configMap:
+            name: dnsmasq-bin
+            defaultMode: 0555
       nodeSelector:
         {{ .Values.labels.server.node_selector_key }}: {{ .Values.labels.server.node_selector_value | quote }}
     {{- with .Values.affinity }}

@@ -63,6 +63,10 @@ network_policy:
     ingress:
       - {}
 
+network:
+  pxe:
+    device: br-simulator
+
 pod:
   replicas:
     server: 1
@@ -109,7 +113,7 @@ conf:
     except-interface=lo
     except-interface=virbr0
     bind-dynamic
-    interface=br-simulator
+    interface=DNSMASQ_IFACE
     dhcp-range=192.168.90.100,192.168.90.254,12h
     dhcp-no-override
     dhcp-authoritative
@@ -120,7 +124,7 @@ conf:
     dhcp-userclass=set:gpxe,"gPXE"
     dhcp-boot=tag:gpxe,/ipxe.pxe
     dhcp-match=set:ipxe,175 # iPXE sends a 175 option.
-    dhcp-boot=tag:ipxe,http://192.168.10.7:8080/boot.ipxe
+    dhcp-boot=tag:ipxe,http://OSH_PXE_IP:8080/boot.ipxe
     dhcp-hostsfile=/etc/dnsmasq.d/dnsmasq.hostsfile
     addn-hosts=/etc/dnsmasq.d/dnsmasq.addnhosts
   hostsfile: ""
@@ -128,6 +132,7 @@ conf:
 
 manifests:
   configmap_etc: true
+  configmap_bin: true
   service_dnsmasq: false
   deployment: true
   network_policy: false
